@@ -31,6 +31,23 @@ config SOC_IMX8M
 	  support, it will provide the SoC info like SoC family,
 	  ID and revision etc.
 
+choice
+	prompt "Advantech board select"
+
+config MACH_ECU150
+	bool "Advantech ECU150 board"
+	depends on SOC_IMX8M
+	
+config MACH_ECU150FL
+	bool "Advantech ECU150FL board"
+	depends on SOC_IMX8M
+	
+config MACH_ECU150A1
+	bool "Advantech ECU150A1 board"
+	depends on SOC_IMX8M
+	
+endchoice
+
 config SOC_IMX9
 	tristate "i.MX9 SoC family support"
 	depends on ARCH_MXC || COMPILE_TEST

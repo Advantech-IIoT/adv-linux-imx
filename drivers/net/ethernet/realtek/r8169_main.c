@@ -2942,6 +2942,8 @@ static void rtl_hw_start_8168f_1(struct rtl8169_private *tp)
 	rtl_hw_start_8168f(tp);
 
 	rtl_ephy_init(tp, e_info_8168f_1);
+	/* Setup LED config */
+	RTL_W16(tp, 0x18, 0x42F);
 }
 
 static void rtl_hw_start_8411(struct rtl8169_private *tp)

@@ -40,6 +40,42 @@
 /* Same as ANADIG_DIGPROG_IMX7D */
 #define ANADIG_DIGPROG_IMX8MM	0x800
 
+#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1)
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+#include <linux/gpio.h>
+#include <linux/delay.h>
+
+#include "../../../arch/arm/mach-imx/board-name.h"
+
+static char board_name[32] = { 0 };
+
+static int board_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%s", board_name);
+	return 0;
+}
+
+static int board_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, board_proc_show, NULL);
+}
+
+static const struct proc_ops board_proc_fops = {
+	.proc_open		= board_proc_open,
+	.proc_read		= seq_read,
+	.proc_lseek		= seq_lseek,
+	.proc_release	= single_release,
+};
+
+static int __init proc_board_init(void)
+{
+	proc_create("board", 0, NULL, &board_proc_fops);
+	return 0;
+}
+#endif
+
 struct imx8_soc_data {
 	char *name;
 	u32 (*soc_revision)(void);
@@ -193,6 +229,40 @@ static void imx8mq_noc_init(void)
 	kasprintf(GFP_KERNEL, "%d.%d", (soc_rev >> 4) & 0xf,  soc_rev & 0xf) : \
 	"unknown"
 
+#define GPIO_TO_PIN(bank, gpio) 				(32 * (bank - 1) + (gpio))
+#define MINI_PCIE_POWER_RESET_DELAY            	500 // 500 ms
+#define MINI_PCIE_RESET_DELAY                  	100 // 100ms
+
+static int gpio_reset_one(int base, int num, int time)
+{
+        int gpio = GPIO_TO_PIN(base, num);
+        if (gpio_request_one(gpio, GPIOF_OUT_INIT_HIGH, "gpio_out") < 0) {
+                pr_err("Failed to request GPIO%d for GPIO%d_%d\n", gpio, base,num);
+                return -1;
+        }
+        gpio_set_value(gpio, 1);
+        mdelay(100);
+
+        gpio_set_value(gpio, 0);
+        mdelay(time);
+
+        gpio_set_value(gpio, 1);
+        mdelay(100);
+
+        //gpio_free(gpio);
+        return 0;
+}
+
+static void minipcie_reset(void)
+{
+#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150A1)
+        /* Minipcie Power Reset */
+        gpio_reset_one(4, 29, MINI_PCIE_POWER_RESET_DELAY);
+        /* Minipcie Module Reset */
+        gpio_reset_one(1, 3, MINI_PCIE_POWER_RESET_DELAY);
+#endif
+}
+
 static int __init imx8_soc_init(void)
 {
 	struct soc_device_attribute *soc_dev_attr;
@@ -251,6 +321,26 @@ static int __init imx8_soc_init(void)
 
 	if (of_machine_is_compatible("fsl,imx8mq"))
 		imx8mq_noc_init();
+
+#ifdef CONFIG_MACH_ECU150
+	printk("+++ECU150 init.\n");
+	sprintf(board_name, "%s\n", ADV_BOARD_ECU_150);
+	proc_board_init();
+	minipcie_reset();
+#endif
+
+#ifdef CONFIG_MACH_ECU150FL
+	printk("+++ECU150FL init.\n");
+	sprintf(board_name, "%s\n", ADV_BOARD_ECU_150FL);
+	proc_board_init();
+#endif
+
+#ifdef CONFIG_MACH_ECU150A1
+	printk("+++ECU150A1 init.\n");
+	sprintf(board_name, "%s\n", ADV_BOARD_ECU_150A1);
+	proc_board_init();
+	minipcie_reset();
+#endif
 
 	return 0;
 

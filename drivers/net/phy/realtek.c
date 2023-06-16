@@ -420,6 +420,24 @@ static int rtl8211f_config_init(struct phy_device *phydev)
 		}
 	}
 
+	// LED CONFIG
+	phy_write(phydev, RTL821x_PAGE_SELECT, 0xd04);
+	phy_write(phydev, 0x10, 0x6D02);
+	phy_write(phydev, 0x11, 0x00);
+	/* restore to default page 0 */
+	phy_write(phydev, RTL821x_PAGE_SELECT, 0x0);
+
+	// disable CLK_OUT
+	u16 reg;
+	phy_write(phydev, RTL821x_PAGE_SELECT, 0x0A43);
+	reg = phy_read(phydev, 0x19);
+	reg &= ~0x1;
+	phy_write(phydev, 0x19, reg);
+	// restore to default page 0
+	phy_write(phydev, RTL821x_PAGE_SELECT, 0x0);
+	// reset phy
+	phy_write(phydev, 0x0, 0x9200);
+
 	return genphy_soft_reset(phydev);
 }
 

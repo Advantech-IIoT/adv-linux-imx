@@ -1934,6 +1934,15 @@ config RTC_DRV_HID_SENSOR_TIME
 	  If this driver is compiled as a module, it will be named
 	  rtc-hid-sensor-time.
 
+config RTC_DRV_HT1382
+	tristate "HT1382 RTC"
+	help
+	  If you say Y here you will get support for the
+	  HOLTEK HT1282 RTC chips.
+
+	  This driver can also be built as a module. If so, the module
+	  will be called rtc-ht1382.
+	  
 config RTC_DRV_GOLDFISH
 	tristate "Goldfish Real Time Clock"
 	depends on HAS_IOMEM
