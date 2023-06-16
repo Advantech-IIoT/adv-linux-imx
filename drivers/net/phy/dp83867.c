@@ -24,6 +24,7 @@
 #define MII_DP83867_PHYSTS	0x11
 #define MII_DP83867_MICR	0x12
 #define MII_DP83867_ISR		0x13
+#define MII_DP83867_LEDCR1	0x18
 #define DP83867_CFG2		0x14
 #define DP83867_CFG3		0x1e
 #define DP83867_CTRL		0x1f
@@ -716,6 +717,9 @@ static int dp83867_config_init(struct phy_device *phydev)
 		ret = phy_write(phydev, MII_DP83867_PHYCTRL, val);
 		if (ret)
 			return ret;
+		ret = phy_write(phydev, MII_DP83867_LEDCR1, 0x6B58);
+		if (ret)
+			return ret;		
 
 		/* If rgmii mode with no internal delay is selected, we do NOT use
 		 * aligned mode as one might expect.  Instead we use the PHY's default

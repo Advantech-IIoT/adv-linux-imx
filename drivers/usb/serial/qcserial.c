@@ -26,12 +26,21 @@ enum qcserial_layouts {
 	QCSERIAL_G1K = 1,	/* Gobi 1000 */
 	QCSERIAL_SWI = 2,	/* Sierra Wireless */
 	QCSERIAL_HWI = 3,	/* Huawei */
+	QCSERIAL_SWI_9X50 = 4, /* Sierra Wireless 9x50 USB-IF */
+	QCSERIAL_SWI_SDX55 = 5, /* Sierra Wireless SDX55 */
+	QCSERIAL_SWI_SDX55_RMNET = 6, /* Sierra Wireless SDX55 */
 };
 
 #define DEVICE_G1K(v, p) \
 	USB_DEVICE(v, p), .driver_info = QCSERIAL_G1K
 #define DEVICE_SWI(v, p) \
 	USB_DEVICE(v, p), .driver_info = QCSERIAL_SWI
+#define DEVICE_SWI_9X50(v, p) \
+	USB_DEVICE(v, p), .driver_info = QCSERIAL_SWI_9X50
+#define DEVICE_SWI_SDX55(v, p) \
+	USB_DEVICE(v, p), .driver_info = QCSERIAL_SWI_SDX55
+#define DEVICE_SWI_SDX55_RMNET(v, p) \
+	USB_DEVICE(v, p), .driver_info = QCSERIAL_SWI_SDX55_RMNET
 #define DEVICE_HWI(v, p) \
 	USB_DEVICE(v, p), .driver_info = QCSERIAL_HWI
 
@@ -63,7 +72,7 @@ static const struct usb_device_id id_table[] = {
 	{DEVICE_G1K(0x05c6, 0x9202)},	/* Generic Gobi Modem device */
 	{DEVICE_G1K(0x05c6, 0x9203)},	/* Generic Gobi Modem device */
 	{DEVICE_G1K(0x05c6, 0x9222)},	/* Generic Gobi Modem device */
-	{DEVICE_G1K(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
+	//{DEVICE_G1K(0x05c6, 0x9008)},	/* Generic Gobi QDL device */
 	{DEVICE_G1K(0x05c6, 0x9009)},	/* Generic Gobi Modem device */
 	{DEVICE_G1K(0x05c6, 0x9201)},	/* Generic Gobi QDL device */
 	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
@@ -168,6 +177,16 @@ static const struct usb_device_id id_table[] = {
 	{DEVICE_SWI(0x1199, 0x90d2)},	/* Sierra Wireless EM9191 QDL */
 	{DEVICE_SWI(0x1199, 0xc080)},	/* Sierra Wireless EM7590 QDL */
 	{DEVICE_SWI(0x1199, 0xc081)},	/* Sierra Wireless EM7590 */
+	{DEVICE_SWI(0x1199, 0x90B0)},	/* Sierra Wireless EM7565 QDL */
+	{DEVICE_SWI_9X50(0x1199, 0x90B1)},	/* Sierra Wireless EM7565 */
+	{DEVICE_SWI(0x1199, 0x90d2)},	/* Sierra Wireless EM9190 QDL */
+	{DEVICE_SWI_SDX55(0x1199, 0x90d3)},	/* Sierra Wireless EM9190 */
+	{DEVICE_SWI(0x1199, 0x90d8)},	/* Sierra Wireless EM9190 QDL */
+	{DEVICE_SWI_SDX55_RMNET(0x1199, 0x90d9)},	/* Sierra Wireless EM9190 */
+	{DEVICE_SWI(0x1199, 0x90e0)},	/* Sierra Wireless EM929x QDL */
+	{DEVICE_SWI_SDX55(0x1199, 0x90e1)},	/* Sierra Wireless EM929x */
+	{DEVICE_SWI(0x1199, 0x90e2)},	/* Sierra Wireless EM929x QDL */
+	{DEVICE_SWI_SDX55(0x1199, 0x90e3)},	/* Sierra Wireless EM929x */
 	{DEVICE_SWI(0x413c, 0x81a2)},	/* Dell Wireless 5806 Gobi(TM) 4G LTE Mobile Broadband Card */
 	{DEVICE_SWI(0x413c, 0x81a3)},	/* Dell Wireless 5570 HSPA+ (42Mbps) Mobile Broadband Card */
 	{DEVICE_SWI(0x413c, 0x81a4)},	/* Dell Wireless 5570e HSPA+ (42Mbps) Mobile Broadband Card */
@@ -396,6 +415,71 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
 				intf->desc.bInterfaceClass,
 				intf->desc.bInterfaceSubClass,
 				intf->desc.bInterfaceProtocol);
+		}
+		break;
+	case QCSERIAL_SWI_SDX55:
+		/*
+		 * Sierra Wireless SDX55 layout:
+		 * 3: AT-capable modem port
+		 * 4: DM
+		 */
+		switch (ifnum) {
+		case 3:
+			dev_dbg(dev, "Modem port found\n");
+			sendsetup = true;
+			break;
+		case 4:
+			dev_dbg(dev, "DM/DIAG interface found\n");
+			break;
+		default:
+			/* don't claim any unsupported interface */
+			altsetting = -1;
+			break;
+		}
+		break;
+	case QCSERIAL_SWI_SDX55_RMNET:
+		/*
+		 * Sierra Wireless SDX55 layout:
+		 * 1: AT-capable modem port
+		 * 2: DM
+		 */
+		switch (ifnum) {
+		case 1:
+			dev_dbg(dev, "Modem port found\n");
+			sendsetup = true;
+			break;
+		case 2:
+			dev_dbg(dev, "DM/DIAG interface found\n");
+			break;
+		default:
+			/* don't claim any unsupported interface */
+			altsetting = -1;
+			break;
+		}
+		break;
+	case QCSERIAL_SWI_9X50:
+		/*
+		 * Sierra Wireless 9X50 USB-IF layout:
+		 * 2: AT-capable modem port
+		 * 3: NMEA
+		 * 4: DM
+		 */
+		switch (ifnum) {
+		case 2:
+			dev_dbg(dev, "Modem port found\n");
+			sendsetup = true;
+			break;
+		case 3:
+			dev_dbg(dev, "NMEA GPS interface found\n");
+			sendsetup = true;
+			break;
+		case 4:
+			dev_dbg(dev, "DM/DIAG interface found\n");
+			break;
+		default:
+			/* don't claim any unsupported interface */
+			altsetting = -1;
+			break;
 		}
 		break;
 	default:

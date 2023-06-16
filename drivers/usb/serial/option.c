@@ -581,6 +581,21 @@ static void option_instat_callback(struct urb *urb);
 #define OPPO_VENDOR_ID				0x22d9
 #define OPPO_PRODUCT_R11			0x276c
 
+#if 1 //+=
+#define ZTE_PRODUCT_ME3620			0x1476
+
+/* Fibocom products */
+#define FIBOCOM_VENDOR_ID 			0x2CB7
+#define FIBOCOM_PRODUCT_L71X 		0x0001
+#define NODECOM_VENDOR_ID			0x1508
+
+#define FIBOCOM_USB_VENDOR_AND_INTERFACE_INFO(vend, cl, sc, pr) \
+.match_flags = USB_DEVICE_ID_MATCH_INT_INFO | USB_DEVICE_ID_MATCH_VENDOR, \
+.idVendor = (vend), \
+.bInterfaceClass = (cl), \
+.bInterfaceSubClass = (sc), \
+.bInterfaceProtocol = (pr)
+#endif
 
 /* Device flags */
 
@@ -1907,6 +1922,31 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x02, 0x05) },
 	{ USB_VENDOR_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0xff, 0x86, 0x10) },
 
+#if 1 //+=
+	{ USB_DEVICE(ZTE_VENDOR_ID, ZTE_PRODUCT_ME3620),
+	  .driver_info = RSVD(3) | RSVD(4) },
+
+    /* Add by Fibocom products */
+	{ FIBOCOM_USB_VENDOR_AND_INTERFACE_INFO(FIBOCOM_VENDOR_ID, 0xff, 0xff, 0xff) },
+	{ FIBOCOM_USB_VENDOR_AND_INTERFACE_INFO(FIBOCOM_VENDOR_ID, 0x0a, 0x00, 0xff) },
+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0256, 0xff, 0xff, 0xff) },
+	{ USB_DEVICE_AND_INTERFACE_INFO(ZTE_VENDOR_ID, 0x0579, 0xff, 0xff, 0xff) },
+	
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x0104) },
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x0105) },
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x0106) },
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x0107) },
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x0108) },
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x0109) },
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x010A) },
+	{ USB_DEVICE(FIBOCOM_VENDOR_ID, 0x010B) },
+	{ USB_DEVICE(NODECOM_VENDOR_ID, 0x1000) },
+	{ USB_DEVICE(NODECOM_VENDOR_ID, 0x1001) },
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x9025) },
+	{ USB_DEVICE(QUALCOMM_VENDOR_ID, 0x90DB) },
+	{ USB_DEVICE(0x2C7C, 0x0306) },
+#endif
+
 	{ USB_DEVICE(BENQ_VENDOR_ID, BENQ_PRODUCT_H10) },
 	{ USB_DEVICE(DLINK_VENDOR_ID, DLINK_PRODUCT_DWM_652) },
 	{ USB_DEVICE(ALINK_VENDOR_ID, DLINK_PRODUCT_DWM_652_U5) }, /* Yes, ALINK_VENDOR_ID */
@@ -2176,6 +2216,61 @@ static const struct usb_device_id option_ids[] = {
 	{ USB_DEVICE_INTERFACE_CLASS(0x305a, 0x1405, 0xff) },			/* GosunCn GM500 MBIM */
 	{ USB_DEVICE_INTERFACE_CLASS(0x305a, 0x1406, 0xff) },			/* GosunCn GM500 ECM/NCM */
 	{ USB_DEVICE_AND_INTERFACE_INFO(OPPO_VENDOR_ID, OPPO_PRODUCT_R11, 0xff, 0xff, 0x30) },
+#if 1 //+=
+	{ USB_DEVICE(0x1546, 0x1141), //+=ublox LISA-U220
+	  .driver_info = RSVD(0) | RSVD(2) | RSVD(4) | RSVD(6) | RSVD(8) | RSVD(10) },
+	{ USB_DEVICE(0x1546, 0x1143), //+=ublox LISA-U220
+	  .driver_info = RSVD(0) | RSVD(2) | RSVD(4) },
+	{ USB_DEVICE(0x1546, 0x1146), //+=ublox LISA-U220
+	  .driver_info = RSVD(0) | RSVD(2) },
+	{ USB_DEVICE(0x1546, 0x1102), //+=u-blox LISA-U200
+	  .driver_info = RSVD(0) | RSVD(2) | RSVD(4) | RSVD(6) | RSVD(8) | RSVD(10) },
+	{ USB_DEVICE(0x1546, 0x01a7), //+=u-blox GPS-G7
+	  .driver_info = RSVD(0) },
+	{ USB_DEVICE(0x1546, 0x110a),  //+=ublox_lasa-R280 EWM-C128FG01E LTE
+	  .driver_info = RSVD(0) | RSVD(2) | RSVD(4) | RSVD(6) | RSVD(8) | RSVD(10) },
+	{ USB_DEVICE(0x1546, 0x01a8) }, //+=ublox_lasa-R280 EWM-C128FG01E GNSS
+	{ USB_DEVICE(0x19f5, 0x9909) }, //+=MC680
+	{ USB_DEVICE(0x1c9e, 0x9b05), //+=U9300C
+	  .driver_info = RSVD(4) },
+	{ USB_DEVICE(0x1ecb, 0x0202) }, //+=AMM570 ACM
+	{ USB_DEVICE(0x1ecb, 0x0205) }, //+=AMM570 RNDIS
+	{ USB_DEVICE(0x1ecb, 0x0208) }, //+=AMM570 ECM
+	{ USB_DEVICE(0x1ecb, 0x020B) }, //+=AMM570 RMNET
+	{ USB_DEVICE(0x1ecb, 0x0209) }, //+=AMM570 BMIM
+
+	/* Added by Quectel */
+	{ USB_DEVICE(0x05C6, 0x9090) }, /* Quectel UC15 */ 
+	{ USB_DEVICE(0x05C6, 0x9003) }, /* Quectel UC20 */ 
+	{ USB_DEVICE(0x05C6, 0x90b3) }, /* Quectel MDG100 */ 
+	{ USB_DEVICE(0x05C6, 0x9215) },  
+	{ USB_DEVICE(0x2C7C, 0x0125) }, /* Quectel EC20 R2.0/EC20 R2.1/EC25/EG25-G/EM05 */ 
+	{ USB_DEVICE(0x2C7C, 0x0121) }, /* Quectel EC21/EG21-G */ 
+	{ USB_DEVICE(0x2C7C, 0x0191) }, /* Quectel EG91 */ 
+	{ USB_DEVICE(0x2C7C, 0x0195) }, /* Quectel EG95 */ 
+	{ USB_DEVICE(0x2C7C, 0x0306) }, /* Quectel EG06/EP06/EM06 */ 
+	{ USB_DEVICE(0x2C7C, 0x0512) }, /* Quectel EG12/EM12/EG18 */ 
+	{ USB_DEVICE(0x2C7C, 0x0296) }, /* Quectel BG96 */ 
+	{ USB_DEVICE(0x2C7C, 0x0700) }, /* Quectel BG95/BG77/BG600L-M3/BC69 */ 
+	{ USB_DEVICE(0x2C7C, 0x0435) }, /* Quectel AG35 */ 
+	{ USB_DEVICE(0x2C7C, 0x0415) }, /* Quectel AG15 */ 
+	{ USB_DEVICE(0x2C7C, 0x0520) }, /* Quectel AG520 */
+	{ USB_DEVICE(0x2C7C, 0x0550) }, /* Quectel AG550 */
+	{ USB_DEVICE(0x2C7C, 0x0620) }, /* Quectel EG20 */ 
+	{ USB_DEVICE(0x2C7C, 0x0800) }, /* Quectel RG500Q/RM500Q/RG510Q/RM510Q */ 
+	{ USB_DEVICE(0x2C7C, 0x0801) }, /* Quectel RM520N-GL */ 
+	{ USB_DEVICE(0x2C7C, 0x6026) }, /* Quectel EC200 */
+	{ USB_DEVICE(0x2C7C, 0x6120) }, /* Quectel UC200 */
+	{ USB_DEVICE(0x2C7C, 0x6000) }, /* Quectel EC200/UC200 */
+	{ USB_DEVICE(0x2C7C, 0x0452) }, /* Quectel AG520R */ 
+	{ USB_DEVICE(0x2C7C, 0x0455) }, /* Quectel AG550R */ 
+
+	/* MLH4481 */
+	{ USB_DEVICE(0x258D, 0x2000),
+	  .driver_info = RSVD(0) },
+	/* GM800 */
+	{ USB_DEVICE(0x305a, 0x1421) },
+#endif
 	{ } /* Terminating entry */
 };
 MODULE_DEVICE_TABLE(usb, option_ids);
@@ -2209,6 +2304,9 @@ static struct usb_serial_driver option_1port_device = {
 #ifdef CONFIG_PM
 	.suspend           = usb_wwan_suspend,
 	.resume            = usb_wwan_resume,
+#if 1 //+=Added by Quectel 
+	.reset_resume      = usb_wwan_resume, 
+#endif 
 #endif
 };
 
@@ -2233,6 +2331,31 @@ static int option_probe(struct usb_serial *serial,
 				&serial->interface->cur_altsetting->desc;
 	unsigned long device_flags = id->driver_info;
 
+#if 1 //Added by Quectel
+	struct usb_device_descriptor *dev_desc = &serial->dev->descriptor;
+	//Quectel UC20's interface 4 can be used as USB Network device
+	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9003)
+		&& serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
+		return -ENODEV;
+
+	//Quectel EC20(MDM9215)'s interface 4 can be used as USB Network device
+	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x05C6) && serial->dev->descriptor.idProduct == cpu_to_le16(0x9215)
+		&& serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
+		return -ENODEV;
+
+	if (serial->dev->descriptor.idVendor == cpu_to_le16(0x2C7C)) {
+		__u16 idProduct = le16_to_cpu(serial->dev->descriptor.idProduct);
+
+		//Quectel module's some interfaces can be used as USB Network device (ecm, rndis, mbim)
+		if (serial->interface->cur_altsetting->desc.bInterfaceClass != 0xFF)
+			return -ENODEV;
+
+		//Quectel EC25&EC20's interface 4 can be used as USB network device (qmi)
+		if ((idProduct != 0x6026 && idProduct != 0x6120) && serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
+			return -ENODEV;
+	}
+#endif
+
 	/* Never bind to the CD-Rom emulation interface	*/
 	if (iface_desc->bInterfaceClass == USB_CLASS_MASS_STORAGE)
 		return -ENODEV;
@@ -2244,6 +2367,73 @@ static int option_probe(struct usb_serial *serial,
 	 */
 	if (iface_is_reserved(device_flags, iface_desc->bInterfaceNumber))
 		return -ENODEV;
+
+#if 1 //+=
+	if (dev_desc->idVendor == ZTE_VENDOR_ID && dev_desc->idProduct == ZTE_PRODUCT_ME3620 &&
+	    iface_desc->bInterfaceNumber == 3)
+		return -ENODEV;
+
+	if (dev_desc->idVendor == ZTE_VENDOR_ID && dev_desc->idProduct == ZTE_PRODUCT_ME3620 &&
+	    iface_desc->bInterfaceNumber == 4)
+		return -ENODEV;
+	
+	if (serial->dev->descriptor.idVendor == 0x305a && 
+    		((serial->dev->descriptor.idProduct == 0x1406) || 
+    		 (serial->dev->descriptor.idProduct == 0x1421)) && 
+			serial->interface->cur_altsetting->desc. bInterfaceNumber == 3)
+ 		return -ENODEV; 
+	if (serial->dev->descriptor.idVendor == 0x305a &&
+    		((serial->dev->descriptor.idProduct == 0x1406) || 
+    		 (serial->dev->descriptor.idProduct == 0x1421)) && 
+			serial->interface->cur_altsetting->desc. bInterfaceNumber == 4) 
+		 return -ENODEV; 
+	if (serial->dev->descriptor.idVendor == 0x305a &&
+    		((serial->dev->descriptor.idProduct == 0x1406) || 
+    		 (serial->dev->descriptor.idProduct == 0x1421)) && 
+			serial->interface->cur_altsetting->desc. bInterfaceNumber == 5) 
+		 return -ENODEV; 
+#endif
+
+#if 1   /*Add by Fibocom products */      
+	if (serial->dev->descriptor.idVendor == FIBOCOM_VENDOR_ID &&
+			serial->dev->descriptor.idProduct == FIBOCOM_PRODUCT_L71X &&
+			serial->interface->cur_altsetting->desc.bInterfaceClass == 0x7)
+		return -ENODEV;
+
+
+    if ((dev_desc->idVendor == FIBOCOM_VENDOR_ID &&
+    		(((dev_desc->idProduct == cpu_to_le16(0x0104) || 
+    		dev_desc->idProduct == cpu_to_le16(0x0105) ||  
+    		dev_desc->idProduct == cpu_to_le16(0x010b)) && 
+            	serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4) || 
+    		(dev_desc->idProduct == cpu_to_le16(0x0109) &&
+            	serial->interface->cur_altsetting->desc.bInterfaceNumber >= 2))
+    	) || (dev_desc->idVendor == NODECOM_VENDOR_ID &&
+        	((dev_desc->idProduct == cpu_to_le16(0x1001) && 
+            	serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4) || 
+        	(dev_desc->idProduct == cpu_to_le16(0x1000) &&
+            	serial->interface->cur_altsetting->desc.bInterfaceNumber >= 2))
+      	) || (dev_desc->idVendor == 0x2C7C && (dev_desc->idProduct == cpu_to_le16(0x0306) && 
+        		serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)))
+    {
+    	printk(KERN_INFO "Discovery the interface for Fibocom.");
+        return -ENODEV;
+    }
+
+    if (dev_desc->idVendor == QUALCOMM_VENDOR_ID &&
+    		(dev_desc->idProduct == cpu_to_le16(0x90DB) && 
+            	((serial->interface->cur_altsetting->desc.bInterfaceNumber == 2) || 
+            	(serial->interface->cur_altsetting->desc.bInterfaceNumber == 5))))
+    {
+    	printk(KERN_INFO "Discovery the interface for Fibocom.");
+        return -ENODEV;
+    }
+
+	if (serial->dev->descriptor.idVendor == ZTE_VENDOR_ID &&
+			serial->dev->descriptor.idProduct == 0x0579 &&
+			serial->interface->cur_altsetting->desc.bInterfaceClass == 0x6)
+		return -ENODEV;
+#endif
 
 	/*
 	 * Allow matching on bNumEndpoints for devices whose interface numbers
