@@ -40,7 +40,6 @@
 /* Same as ANADIG_DIGPROG_IMX7D */
 #define ANADIG_DIGPROG_IMX8MM	0x800
 
-#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1)
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
@@ -74,7 +73,6 @@ static int __init proc_board_init(void)
 	proc_create("board", 0, NULL, &board_proc_fops);
 	return 0;
 }
-#endif
 
 struct imx8_soc_data {
 	char *name;
@@ -240,14 +238,11 @@ static int gpio_reset_one(int base, int num, int time)
                 pr_err("Failed to request GPIO%d for GPIO%d_%d\n", gpio, base,num);
                 return -1;
         }
-        gpio_set_value(gpio, 1);
-        mdelay(100);
 
         gpio_set_value(gpio, 0);
         mdelay(time);
 
         gpio_set_value(gpio, 1);
-        mdelay(100);
 
         //gpio_free(gpio);
         return 0;
@@ -255,11 +250,12 @@ static int gpio_reset_one(int base, int num, int time)
 
 static void minipcie_reset(void)
 {
-#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150A1)
+#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150A1) || defined(CONFIG_MACH_ECU150F)
         /* Minipcie Power Reset */
-        gpio_reset_one(4, 29, MINI_PCIE_POWER_RESET_DELAY);
+        gpio_reset_one(1, 3, MINI_PCIE_POWER_RESET_DELAY); // MINIPCIE1
         /* Minipcie Module Reset */
-        gpio_reset_one(1, 3, MINI_PCIE_POWER_RESET_DELAY);
+        gpio_reset_one(4, 29, MINI_PCIE_POWER_RESET_DELAY); // MINIPCIE1
+        gpio_reset_one(3, 24, MINI_PCIE_POWER_RESET_DELAY); // MINIPCIE2
 #endif
 }
 
@@ -335,9 +331,22 @@ static int __init imx8_soc_init(void)
 	proc_board_init();
 #endif
 
+#ifdef CONFIG_MACH_ECU1370
+	printk("+++ECU1370 init.\n");
+	sprintf(board_name, "%s\n", ADV_BOARD_ECU_1370);
+	proc_board_init();
+#endif
+
 #ifdef CONFIG_MACH_ECU150A1
 	printk("+++ECU150A1 init.\n");
 	sprintf(board_name, "%s\n", ADV_BOARD_ECU_150A1);
+	proc_board_init();
+	minipcie_reset();
+#endif
+
+#ifdef CONFIG_MACH_ECU150F
+	printk("+++ECU150F init.\n");
+	sprintf(board_name, "%s\n", ADV_BOARD_ECU_150F);
 	proc_board_init();
 	minipcie_reset();
 #endif

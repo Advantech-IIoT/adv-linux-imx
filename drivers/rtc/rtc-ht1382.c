@@ -107,7 +107,7 @@ struct ht1382 {
 #define GPIO_HT1382_CLK         GPIO_TO_PIN(5, 19)
 #endif
 
-#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1)
+#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1) || defined(CONFIG_MACH_ECU150F) || defined(CONFIG_MACH_ECU1370)
 #define GPIO_TO_PIN(bank, gpio) (32 * (bank - 1) + (gpio))
 
 #define GPIO_HT1382_CE          GPIO_TO_PIN(4, 27)
@@ -981,7 +981,7 @@ static int ht1382_rtc_probe(struct platform_device *pdev)
 		rtc_ic = ISL1219_RTC;
 		//printk("RTC is ISL1219.\n");
 	}
-#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1)
+#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1) || defined(CONFIG_MACH_ECU150F) || defined(CONFIG_MACH_ECU1370)
 	rtc_ic = HT1382_RTC;
 #endif
 		

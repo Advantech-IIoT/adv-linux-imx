@@ -1071,7 +1071,7 @@ static void imx_uart_set_mctrl(struct uart_port *port, unsigned int mctrl)
 		uts |= UTS_LOOP;
 	imx_uart_writel(sport, uts, imx_uart_uts_reg(sport));
 
-#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1)
+#if defined(CONFIG_MACH_ECU150) || defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU150A1) || defined(CONFIG_MACH_ECU150F) || defined(CONFIG_MACH_ECU1370)
 	mctrl |= TIOCM_RTS;
 #endif
 	mctrl_gpio_set(sport->gpios, mctrl);

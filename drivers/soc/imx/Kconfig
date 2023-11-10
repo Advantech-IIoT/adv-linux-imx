@@ -38,12 +38,20 @@ config MACH_ECU150
 	bool "Advantech ECU150 board"
 	depends on SOC_IMX8M
 	
+config MACH_ECU150F
+	bool "Advantech ECU150F board"
+	depends on SOC_IMX8M
+	
 config MACH_ECU150FL
 	bool "Advantech ECU150FL board"
 	depends on SOC_IMX8M
 	
 config MACH_ECU150A1
 	bool "Advantech ECU150A1 board"
+	depends on SOC_IMX8M
+	
+config MACH_ECU1370
+	bool "Advantech ECU1370 board"
 	depends on SOC_IMX8M
 	
 endchoice

@@ -780,7 +780,11 @@ static int spidev_probe(struct spi_device *spi)
 		spidev->devt = MKDEV(SPIDEV_MAJOR, minor);
 		dev = device_create(spidev_class, &spi->dev, spidev->devt,
 				    spidev, "spidev%d.%d",
+#if defined(CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU1370)
+				    spi->master->bus_num + 1, spi->chip_select);
+#else
 				    spi->master->bus_num, spi->chip_select);
+#endif					
 		status = PTR_ERR_OR_ZERO(dev);
 	} else {
 		dev_dbg(&spi->dev, "no minor number available!\n");

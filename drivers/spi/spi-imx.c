@@ -8,6 +8,7 @@
 #include <linux/dmaengine.h>
 #include <linux/dma-mapping.h>
 #include <linux/err.h>
+#include <linux/gpio.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/irq.h>
@@ -40,6 +41,7 @@ MODULE_PARM_DESC(use_dma, "Enable usage of DMA when available (default)");
 #define MXC_CSPICTRL		0x08
 #define MXC_CSPIINT		0x0c
 #define MXC_RESET		0x1c
+#define	USE_CS_IRQ 			1 //+=
 
 /* generic defines to abstract from the different register layouts */
 #define MXC_INT_RR	(1 << 0) /* Receive data ready interrupt */
@@ -51,6 +53,14 @@ MODULE_PARM_DESC(use_dma, "Enable usage of DMA when available (default)");
 #define MX51_ECSPI_CTRL_MAX_BURST	512
 /* The maximum bytes that IMX53_ECSPI can transfer in slave mode.*/
 #define MX53_MAX_TRANSFER_BYTES		512
+
+#define IMX_GPIO_NR(bank, nr)           (((bank) - 1) * 32 + (nr))
+
+#if defined( CONFIG_MACH_ECU150FL) || defined(CONFIG_MACH_ECU1370)
+#define SPI_CS_IRQ_GPIO					IMX_GPIO_NR(5, 12)
+#else
+#define SPI_CS_IRQ_GPIO					IMX_GPIO_NR(3, 22)
+#endif
 
 enum spi_imx_devtype {
 	IMX1_CSPI,
@@ -114,6 +124,7 @@ struct spi_imx_data {
 	bool slave_mode;
 	bool slave_aborted;
 	unsigned int slave_burst;
+	int slave_irq; //+=
 
 	/* DMA */
 	bool usedma;
@@ -1206,6 +1217,18 @@ static void spi_imx_push(struct spi_imx_data *spi_imx)
 		spi_imx->devtype_data->trigger(spi_imx);
 }
 
+#if USE_CS_IRQ //+=
+static irqreturn_t spi_slave_isr(int irq, void *data)
+{
+	struct spi_imx_data *spi_imx = data;
+	
+	spi_imx->devtype_data->intctrl(spi_imx, 0);
+	complete(&spi_imx->xfer_done);
+
+	return IRQ_HANDLED;
+}
+#endif
+
 static irqreturn_t spi_imx_isr(int irq, void *dev_id)
 {
 	struct spi_imx_data *spi_imx = dev_id;
@@ -1832,6 +1855,25 @@ static int spi_imx_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "can't get irq%d: %d\n", irq, ret);
 		goto out_master_put;
 	}
+
+#if USE_CS_IRQ //+=
+	if (spi_imx->slave_mode) {
+		spi_imx->slave_irq = gpio_to_irq(SPI_CS_IRQ_GPIO);
+		
+		ret = devm_gpio_request_one(&pdev->dev, SPI_CS_IRQ_GPIO, GPIOF_DIR_IN, "spi_slave_irq_gpio");
+		if (ret) {
+			dev_err(&pdev->dev, "Can't get CS GPIO %i\n", SPI_CS_IRQ_GPIO);
+			goto out_master_put;
+		}
+
+		ret = devm_request_irq(&pdev->dev, spi_imx->slave_irq, spi_slave_isr, IRQF_TRIGGER_RISING,
+				       "spi_slave_irq", spi_imx);
+		if (ret) {
+			dev_err(&pdev->dev, "can't get spi slave irq%d: %d\n", spi_imx->slave_irq, ret);
+			goto out_master_put;
+		}
+	}
+#endif		
 
 	spi_imx->clk_ipg = devm_clk_get(&pdev->dev, "ipg");
 	if (IS_ERR(spi_imx->clk_ipg)) {
