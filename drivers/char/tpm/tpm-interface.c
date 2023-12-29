@@ -65,6 +65,10 @@ static ssize_t tpm_try_transmit(struct tpm_chip *chip, void *buf, size_t bufsiz)
 	ssize_t len = 0;
 	u32 count, ordinal;
 	unsigned long stop;
+#ifdef CONFIG_TCG_TIS_I2C
+	unsigned int delay_msec = TPM_TIMEOUT_POLL;
+#endif
+	
 
 	if (bufsiz < TPM_HEADER_SIZE)
 		return -EINVAL;
@@ -114,7 +118,12 @@ static ssize_t tpm_try_transmit(struct tpm_chip *chip, void *buf, size_t bufsiz)
 			return -ECANCELED;
 		}
 
+#ifdef CONFIG_TCG_TIS_I2C
+		tpm_msleep(delay_msec);
+		delay_msec = delay_msec + delay_msec;
+#else
 		tpm_msleep(TPM_TIMEOUT_POLL);
+#endif
 		rmb();
 	} while (time_before(jiffies, stop));
 
@@ -160,7 +169,11 @@ ssize_t tpm_transmit(struct tpm_chip *chip, u8 *buf, size_t bufsiz)
 	ssize_t ret;
 	const size_t save_size = min(sizeof(save), bufsiz);
 	/* the command code is where the return code will be */
+#ifdef CONFIG_TCG_TIS_I2C
 	u32 cc = be32_to_cpu(header->return_code);
+#endif
+
+	u32 i = TPM_RETRY;
 
 	/*
 	 * Subtlety here: if we have a space, the handles will be
@@ -172,6 +185,37 @@ ssize_t tpm_transmit(struct tpm_chip *chip, u8 *buf, size_t bufsiz)
 	for (;;) {
 		ret = tpm_try_transmit(chip, buf, bufsiz);
 		if (ret < 0)
+#ifdef CONFIG_TCG_TIS_I2C
+		{
+			i--;
+			if (i <= 0)
+				break;
+		}
+		else
+		{
+			rc = be32_to_cpu(header->return_code);
+			if (rc != TPM2_RC_RETRY && rc != TPM2_RC_TESTING)
+				break;
+			/*
+			 * return immediately if self test returns test
+			 * still running to shorten boot time.
+			 */
+			if (rc == TPM2_RC_TESTING && cc == TPM2_CC_SELF_TEST)
+				break;
+
+			if (delay_msec > TPM2_DURATION_LONG) {
+				if (rc == TPM2_RC_RETRY)
+					dev_err(&chip->dev, "in retry loop\n");
+				else
+					dev_err(&chip->dev,
+						"self test is still running\n");
+				break;
+			}
+			tpm_msleep(delay_msec);
+			delay_msec *= 2;
+			memcpy(buf, save, save_size);
+		}
+#else
 			break;
 		rc = be32_to_cpu(header->return_code);
 		if (rc != TPM2_RC_RETRY && rc != TPM2_RC_TESTING)
@@ -194,6 +238,7 @@ ssize_t tpm_transmit(struct tpm_chip *chip, u8 *buf, size_t bufsiz)
 		tpm_msleep(delay_msec);
 		delay_msec *= 2;
 		memcpy(buf, save, save_size);
+#endif
 	}
 	return ret;
 }

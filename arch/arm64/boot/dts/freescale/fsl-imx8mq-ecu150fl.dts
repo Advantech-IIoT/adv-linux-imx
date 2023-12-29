@@ -102,6 +102,19 @@
 		interrupts = <6 8>;	/* gpio1_6 */
 		ht1382-i2c-interface;
 	};
+
+	leds {
+		pinctrl-names = "default";
+		pinctrl-0 = <&user_leds>;
+
+		compatible = "gpio-leds";
+
+		led1 {
+			label = "imx8:green:run";
+			gpios = <&gpio5 3 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
 };
 
 &A53_0 {
@@ -480,8 +493,8 @@
 
 	ht1382_rtc_pins: pinmux_ht1382_pins {
 		fsl,pins = <
-			MX8MQ_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19 	/* RTC_DIO */
-			MX8MQ_IOMUXC_GPIO1_IO04_GPIO1_IO4		0x19 	/* RTC_SCLK */
+			MX8MQ_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x2f 	/* RTC_DIO */
+			MX8MQ_IOMUXC_GPIO1_IO04_GPIO1_IO4		0x2f 	/* RTC_SCLK */
 			MX8MQ_IOMUXC_GPIO1_IO06_GPIO1_IO6		0x19 	/* RTC_INT */
 		>;
 	};
@@ -674,7 +687,7 @@
 
 	pinctrl_usdhc2: usdhc2grp {
 		fsl,pins = <
-			MX8MQ_IOMUXC_SD2_CLK_USDHC2_CLK			0x83
+			MX8MQ_IOMUXC_SD2_CLK_USDHC2_CLK			0x8f
 			MX8MQ_IOMUXC_SD2_CMD_USDHC2_CMD			0xc3
 			MX8MQ_IOMUXC_SD2_DATA0_USDHC2_DATA0		0xc3
 			MX8MQ_IOMUXC_SD2_DATA1_USDHC2_DATA1		0xc3
@@ -685,7 +698,7 @@
 
 	pinctrl_usdhc2_100mhz: usdhc2-100grp {
 		fsl,pins = <
-			MX8MQ_IOMUXC_SD2_CLK_USDHC2_CLK			0x85
+			MX8MQ_IOMUXC_SD2_CLK_USDHC2_CLK			0x8f
 			MX8MQ_IOMUXC_SD2_CMD_USDHC2_CMD			0xc5
 			MX8MQ_IOMUXC_SD2_DATA0_USDHC2_DATA0		0xc5
 			MX8MQ_IOMUXC_SD2_DATA1_USDHC2_DATA1		0xc5
@@ -696,7 +709,7 @@
 
 	pinctrl_usdhc2_200mhz: usdhc2-200grp {
 		fsl,pins = <
-			MX8MQ_IOMUXC_SD2_CLK_USDHC2_CLK			0x87
+			MX8MQ_IOMUXC_SD2_CLK_USDHC2_CLK			0x8f
 			MX8MQ_IOMUXC_SD2_CMD_USDHC2_CMD			0xc7
 			MX8MQ_IOMUXC_SD2_DATA0_USDHC2_DATA0		0xc7
 			MX8MQ_IOMUXC_SD2_DATA1_USDHC2_DATA1		0xc7

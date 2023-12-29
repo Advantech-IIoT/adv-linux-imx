@@ -10,17 +10,18 @@
 #include "imx8mq.dtsi"
 
 / {
-	model = "NXP i.MX8MQ ECU150";
+	model = "NXP i.MX8MQ ECU1370";
 	compatible = "fsl,imx8mq-evk", "fsl,imx8mq";
 
 	chosen {
-		bootargs = "console=ttymxc0,115200 earlycon=ec_imx6q,0x30860000,115200";
-		stdout-path = &uart1;
+		bootargs = "console=ttymxc3,115200 earlycon=ec_imx6q,0x30a60000,115200";
+		stdout-path = &uart4;
 	};
 
 	memory@40000000 {
 		device_type = "memory";
-		reg = <0x00000000 0x40000000 0 0x80000000>;
+		reg = <0x0 0x40000000 0 0x80000000>,
+		      <0x1 0x00000000 0 0x80000000>;
 	};
 
 	pcie0_refclk: pcie0-refclk {
@@ -81,6 +82,14 @@
 			};
 		};
 	};
+
+    clocks {
+        clk24M: can_clock {
+            compatible = "fixed-clock";
+            #clock-cells = <0>;
+            clock-frequency = <24000000>;
+        };
+    };
 
 	rtc1 {
 		pinctrl-names = "default";

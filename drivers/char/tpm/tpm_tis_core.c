@@ -91,6 +91,65 @@ again:
 	return -ETIME;
 }
 
+#ifdef CONFIG_TCG_TIS_I2C
+static int wait_for_tpm_stat_result(struct tpm_chip *chip, u8 mask, u8 mask_result, unsigned long timeout, wait_queue_head_t *queue, bool check_cancel)
+{
+	unsigned long stop;
+	long rc;
+	u8 status;
+	bool canceled = false;
+
+	/* check current status */
+	status = chip->ops->status(chip);
+	
+	if ((status & mask) == mask_result)		
+		return 0;
+					
+	stop = jiffies + timeout;
+
+	if (chip->flags & TPM_CHIP_FLAG_IRQ) {
+again:
+		timeout = stop - jiffies;
+		if ((long)timeout <= 0)
+			return -ETIME;
+		rc = wait_event_interruptible_timeout(*queue,
+			wait_for_tpm_stat_cond(chip, mask, check_cancel, &canceled), timeout);
+		if (rc > 0) {
+			if (canceled)
+				return -ECANCELED;
+			return 0;
+		}
+		if (rc == -ERESTARTSYS && freezing(current)) {
+			clear_thread_flag(TIF_SIGPENDING);
+			goto again;
+		}
+	} 
+	else {
+		do {
+			usleep_range(TPM_TIMEOUT_USECS_MIN,
+				     TPM_TIMEOUT_USECS_MAX);
+			status = chip->ops->status(chip);
+			
+			if ((status & mask) == mask_result)		
+					return 0;
+			
+		} while (time_before(jiffies, stop));
+	}
+	
+	return -ETIME;
+}
+
+static bool tpm_tis_check_data(struct tpm_chip *chip, const u8 *buf, size_t len)
+{
+	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
+
+	if (priv->phy_ops->check_data)
+		return priv->phy_ops->check_data(priv, buf, len);
+
+	return true;
+}
+#endif
+
 /* Before we attempt to access the TPM we must see that the valid bit is set.
  * The specification says that this bit is 0 at reset and remains 0 until the
  * 'TPM has gone through its self test and initialization and has established
@@ -287,9 +346,65 @@ static int tpm_tis_recv(struct tpm_chip *chip, u8 *buf, size_t count)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	int size = 0;
+#ifdef CONFIG_TCG_TIS_I2C
+	int status, i;
+	bool check_data = false;
+#else
 	int status;
+#endif
 	u32 expected;
 
+#ifdef CONFIG_TCG_TIS_I2C
+	for (i = 0; i < TPM_RETRY; i++) 
+	{
+		if (count < TPM_HEADER_SIZE) {
+			size = -EIO;
+			goto out;
+		}
+		size = recv_data(chip, buf, TPM_HEADER_SIZE);
+		/* read first 10 bytes, including tag, paramsize, and result */
+		if (size < TPM_HEADER_SIZE) {
+			dev_err(&chip->dev, "Unable to read header\n");
+			goto out;
+		}
+
+		expected = be32_to_cpu(*(__be32 *) (buf + 2));
+		if (expected > count || expected < TPM_HEADER_SIZE) {
+			size = -EIO;
+			goto out;
+		}
+
+		size += recv_data(chip, &buf[TPM_HEADER_SIZE],
+				  expected - TPM_HEADER_SIZE);
+		if (size < expected) {
+			dev_err(&chip->dev, "Unable to read remainder of result\n");
+			size = -ETIME;
+			goto out;
+		}
+
+		if (wait_for_tpm_stat(chip, TPM_STS_VALID, chip->timeout_c,
+				      &priv->int_queue, false) < 0) {
+			size = -ETIME;
+			goto out;
+		}
+
+		status = tpm_tis_status(chip);
+		if (status & TPM_STS_DATA_AVAIL) {	/* retry? */
+			dev_err(&chip->dev, "Error left over data\n");
+			size = -EIO;
+			goto out;
+		}
+
+		check_data = tpm_tis_check_data(chip, buf, size);
+		if (!check_data)
+			tpm_tis_write8(priv, TPM_STS(priv->locality), TPM_STS_RESPONSE_RETRY);
+		else 
+			break;
+	}
+	
+	if (!check_data)
+		size = -EIO;
+#else
 	if (count < TPM_HEADER_SIZE) {
 		size = -EIO;
 		goto out;
@@ -327,6 +442,7 @@ static int tpm_tis_recv(struct tpm_chip *chip, u8 *buf, size_t count)
 		size = -EIO;
 		goto out;
 	}
+#endif
 
 out:
 	tpm_tis_ready(chip);
@@ -343,7 +459,9 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 	int rc, status, burstcnt;
 	size_t count = 0;
+#ifndef CONFIG_TCG_TIS_I2C
 	bool itpm = priv->flags & TPM_TIS_ITPM_WORKAROUND;
+#endif
 
 	status = tpm_tis_status(chip);
 	if ((status & TPM_STS_COMMAND_READY) == 0) {
@@ -370,7 +488,13 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 			goto out_err;
 
 		count += burstcnt;
-
+#ifdef CONFIG_TCG_TIS_I2C
+        if (wait_for_tpm_stat_result(chip, TPM_STS_VALID | TPM_STS_DATA_EXPECT, TPM_STS_VALID | TPM_STS_DATA_EXPECT, chip->timeout_c,
+				&priv->int_queue, false) < 0) {
+			rc = -ETIME;
+			goto out_err;
+	    }
+#else
 		if (wait_for_tpm_stat(chip, TPM_STS_VALID, chip->timeout_c,
 					&priv->int_queue, false) < 0) {
 			rc = -ETIME;
@@ -381,10 +505,21 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 			rc = -EIO;
 			goto out_err;
 		}
+#endif
 	}
 
 	/* write last byte */
 	rc = tpm_tis_write8(priv, TPM_DATA_FIFO(priv->locality), buf[count]);
+#ifdef CONFIG_TCG_TIS_I2C
+	if (rc < 0)
+		goto out_err;
+
+	if (wait_for_tpm_stat_result(chip, TPM_STS_VALID | TPM_STS_DATA_EXPECT, TPM_STS_VALID, chip->timeout_a,
+					&priv->int_queue, false) < 0) {
+		rc = -ETIME;
+		goto out_err;
+	}
+#else
 	if (rc < 0)
 		goto out_err;
 
@@ -398,6 +533,7 @@ static int tpm_tis_send_data(struct tpm_chip *chip, const u8 *buf, size_t len)
 		rc = -EIO;
 		goto out_err;
 	}
+#endif
 
 	return 0;
 
@@ -435,13 +571,29 @@ static void disable_interrupts(struct tpm_chip *chip)
 static int tpm_tis_send_main(struct tpm_chip *chip, const u8 *buf, size_t len)
 {
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
+#ifdef CONFIG_TCG_TIS_I2C
+	int rc, i;
+	bool data_valid = false;
+#else
 	int rc;
+#endif
 	u32 ordinal;
 	unsigned long dur;
 
+#ifdef CONFIG_TCG_TIS_I2C
+	for (i = 0; i < TPM_RETRY && !data_valid; i++) {
+		rc = tpm_tis_send_data(chip, buf, len);
+		if (rc < 0)
+			return rc;
+		data_valid = tpm_tis_check_data(chip, buf, len);
+	}
+	if (!data_valid)
+		return -EIO;
+#else
 	rc = tpm_tis_send_data(chip, buf, len);
 	if (rc < 0)
 		return rc;
+#endif
 
 	/* go and do it */
 	rc = tpm_tis_write8(priv, TPM_STS(priv->locality), TPM_STS_GO);
@@ -666,6 +818,9 @@ out:
 
 static bool tpm_tis_req_canceled(struct tpm_chip *chip, u8 status)
 {
+#ifdef CONFIG_TCG_TIS_I2C
+	return ((status & TPM_STS_COMMAND_READY) == TPM_STS_COMMAND_READY);
+#else
 	struct tpm_tis_data *priv = dev_get_drvdata(&chip->dev);
 
 	switch (priv->manufacturer_id) {
@@ -677,6 +832,7 @@ static bool tpm_tis_req_canceled(struct tpm_chip *chip, u8 status)
 	default:
 		return (status == TPM_STS_COMMAND_READY);
 	}
+#endif
 }
 
 static irqreturn_t tis_int_handler(int dummy, void *dev_id)
